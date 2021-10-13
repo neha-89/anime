@@ -1,57 +1,51 @@
-import React, { useState } from 'react';
-import {
-  BrowserRouter as Router,
-  Route,
-  Redirect,
-  Switch,
-} from 'react-router-dom';
-import Home from './pages/Home';
-import Results from './pages/Results';
-import SingleView from './pages/SingleView';
-import MainNavigation from './components/MainNavigation';
-import { SearchContext } from './context/search';
+import { useState, useEffect } from 'react';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import MainContent from './components/MainContent';
 
-const App = () => {
-  const [animeData, setAnimeData] = useState([]);
-  const [singleData, setSingleData] = useState({});
+function App() {
+	const [animeList, SetAnimeList] = useState([]);
+	const [topAnime, SetTopAnime] = useState([]);
+	const [search, SetSearch] = useState("");
 
-  const setData = (data) => {
-    setAnimeData(data);
-  };
+	const GetTopAnime = async () => {
+		const temp = await fetch(`https://api.jikan.moe/v3/top/anime/1/bypopularity`)
+			.then(res => res.json());
 
-  const setSingle = (data) => {
-    setSingleData(data);
-  };
+		SetTopAnime(temp.top.slice(0, 5));
+	}
 
-  const search = (searchTerm) => {
-    return fetch(
-      `https://api.jikan.moe/v3/search/anime?q=${searchTerm}&limit=20`
-    ).then((response) => response.json());
-  };
+	const HandleSearch = e => {
+		e.preventDefault();
 
-  return (
-    <SearchContext.Provider
-      value={{ search, animeData, setData, singleData, setSingle }}
-    >
-      <Router>
-        <MainNavigation />
-        <main>
-          <Switch>
-            <Route path="/" exact>
-              <Home />
-            </Route>
-            <Route path="/results" exact>
-              <Results />
-            </Route>
-            <Route path="/single-view" exact>
-              <SingleView />
-            </Route>
-            <Redirect to="/" />
-          </Switch>
-        </main>
-      </Router>
-    </SearchContext.Provider>
-  );
-};
+		FetchAnime(search);
+	}
+
+	const FetchAnime = async (query) => {
+		const temp = await fetch(`https://api.jikan.moe/v3/search/anime?q=${query}&order_by=title&sort=asc&limit=10`)
+			.then(res => res.json());
+
+		SetAnimeList(temp.results);
+	}
+
+	useEffect(() => {
+		GetTopAnime();
+	}, []);
+	
+	return (
+		<div className="App">
+			<Header />
+			<div className="content-wrap">
+				<Sidebar 
+					topAnime={topAnime} />
+				<MainContent
+					HandleSearch={HandleSearch}
+					search={search}
+					SetSearch={SetSearch}
+					animeList={animeList} />
+			</div>
+		</div>
+	);
+}
 
 export default App;
